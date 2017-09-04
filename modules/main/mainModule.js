@@ -1,3 +1,4 @@
 (function() {
-    angular.module("mainModule", []);
+    angular.module("mainModule", [])
+    .constant("_", window._);
 })();
