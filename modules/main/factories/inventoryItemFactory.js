@@ -8,6 +8,7 @@
  *      - "name" (string)
  *
  *  Optional Fields:
+ *      - "isLegendary" (boolean): determines whether or not sell-in value can be changed
  *      - "degradationFactorRelativeToNormal" (integer, defaulted to 1): 
  *          - Used for items with degradation factors higher than normal items.
  *          - Given this value, the current degradation factor is the quotient of this value and REGULAR_DEGRADATION_FACTOR 
@@ -71,6 +72,7 @@
                 }
 
                 item.name = config.name;
+                item.isLegendary = config.isLegendary;
                 item.degradationFactorRelativeToNormal = config.degradationFactorRelativeToNormal || 1;
                 item.minSellIn = config.minSellIn || 0;
                 item.minQuality = config.minQuality || 0;
@@ -91,7 +93,11 @@
                     this.updateSellInValue(numOfDays);
                     this.updateQualityValue();
                 },
-                updateSellInValue: function updateSellInValud(numOfDays) {
+                updateSellInValue: function updateSellInValue(numOfDays) {
+                    if (this.isLegendary) {
+                        return this.sellInValue;
+                    }
+
                     if (numOfDays > this.sellInValue) {
                         this.sellInValue = this.minSellIn;
                     } else if (this.sellInValue > this.minSellIn) {
@@ -105,6 +111,10 @@
                  * - Must be invoked when appropriate changes have been made to this.sellInValue
                  */
                 updateQualityValue: function updateQualityValue() {
+                    if (this.isLegendary) {
+                        return this.qualityValue;
+                    }
+
                     if (this.qualityValue > 0) {
                         var defaultDegradationValue = REGULAR_DEGRADATION_FACTOR * this.degradationFactorRelativeToNormal;
 
