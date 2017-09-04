@@ -73,6 +73,8 @@
                 item.enhanceBy = config.qualityValue.enhanceBy;
                 item.degradeBy = config.qualityVaue.degradeBy;
                 item.resetValues();
+
+                return item;
             },
             prototype: {
                 /**
