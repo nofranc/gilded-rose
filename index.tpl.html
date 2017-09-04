@@ -3,9 +3,24 @@
       <title>AngularJS First Application</title>
    </head>
    
-   <body ng-app = "mainModule" ng-controller="MainCtrl as gildedRoseCtrl">
+   <body ng-app = "mainModule" ng-controller="MainCtrl as vm">
       <h1>Gilded Rose Inventory</h1>
-      
+      <button type="button" ng-click="vm.updateAll()">Update</button>
+      <button type="button" ng-click="vm.reset()">Reset</button>
+      <div>
+         <table>
+            <tr>
+               <th>Name</th>
+               <th>Sell-In</th>
+               <th>Quality</th>
+            </tr>
+            <tr ng-repeat="inventoryItem in vm.inventory track by $index">
+               <td>{{inventoryItem.name}}</td>
+               <td>{{inventoryItem.sellInValue}}</td>
+               <td>{{inventoryItem.qualityValue}}</td>
+            </tr>
+         </table>
+      </div>
       <!-- Dependencies -->
       <script src = "https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.4/lodash.min.js"></script>
       <script src = "https://ajax.googleapis.com/ajax/libs/angularjs/1.6.6/angular.min.js"></script>
