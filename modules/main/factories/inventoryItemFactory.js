@@ -1,5 +1,5 @@
 /**
- * InventoryItemsFactory generates a definition for class, InventoryItem.
+ * InventoryItemsFactory contains a definition for InventoryItem class.
  *
  * Configurations:
  *  The create functions takes in a single object input.
