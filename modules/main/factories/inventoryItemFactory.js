@@ -77,7 +77,7 @@
                 item.minSellIn = config.minSellIn || 0;
                 item.minQuality = config.minQuality || 0;
                 item.enhanceBy = _.get(config, "qualityValue.enhanceBy");
-                item.degradeBy = _.get(config, "qualityVaue.degradeBy");
+                item.degradeBy = _.get(config, "qualityValue.degradeBy");
                 item.resetValues();
 
                 return item;
