@@ -47,8 +47,7 @@
 
 (function() {
     var mainModule = angular.module("mainModule");
-    mainModule.factory("InventoryItemsFactory", function itemsFactory($log) {
-
+    mainModule.factory("InventoryItemsFactory", function itemsFactory(_, $log) {
         /*
          * Degradataion factor for regular items -- 
          *  For regular items, quality value diminishes be this value per day
@@ -61,17 +60,22 @@
             create: function create(config) {
                 var item = Object.create(this.prototype);
 
-                if (!isString(config.name) || isStringEmpty(config.name)) {
+                if (config == null) {
+                    $log.error("Cannot create object. Must define configurations.");
+                    return null;
+                }
+
+                if (_.isEmpty(config.name)) {
                     $log.error("Cannot create object. Must input name.");
                     return null;
                 }
 
                 item.name = config.name;
                 item.degradationFactorRelativeToNormal = config.degradationFactorRelativeToNormal || 1;
-                item.minSellIn = config.minSellIn;
-                item.minQuality = config.minQuality;
-                item.enhanceBy = config.qualityValue.enhanceBy;
-                item.degradeBy = config.qualityVaue.degradeBy;
+                item.minSellIn = config.minSellIn || 0;
+                item.minQuality = config.minQuality || 0;
+                item.enhanceBy = _.get(config, "qualityValue.enhanceBy");
+                item.degradeBy = _.get(config, "qualityVaue.degradeBy");
                 item.resetValues();
 
                 return item;
@@ -88,11 +92,9 @@
                     this.updateQualityValue();
                 },
                 updateSellInValue: function updateSellInValud(numOfDays) {
-                    var minSellIn = this.minSellIn || 0;
-
                     if (numOfDays > this.sellInValue) {
-                        this.sellInValue = minSellIn;
-                    } else if (this.sellInValue > minSellIn) {
+                        this.sellInValue = this.minSellIn;
+                    } else if (this.sellInValue > this.minSellIn) {
                         this.sellInValue -= numOfDays == null ? 1 : numOfDays;
                     }
 
@@ -103,7 +105,6 @@
                  * - Must be invoked when appropriate changes have been made to this.sellInValue
                  */
                 updateQualityValue: function updateQualityValue() {
-                    var minQuality = this.minQuality || 0;
                     if (this.qualityValue > 0) {
                         var defaultDegradationValue = REGULAR_DEGRADATION_FACTOR * this.degradationFactorRelativeToNormal;
 
@@ -115,11 +116,11 @@
 
                         var degradeByConfig;
 
-                        if (isFunction(this.enhanceBy)) {
+                        if (_.isFunction(this.enhanceBy)) {
                             enhanceByValue = this.enhanceBy(this.sellInValue);
                         }
 
-                        if (isFunction(this.degradeBy)) {
+                        if (_.isFunction(this.degradeBy)) {
                             degradeByConfig = this.degradeBy(this.sellInValue);
                             var setQualityTo = degradeByConfig.setQualityTo;
                             if (setQualityTo != null) {
@@ -139,7 +140,7 @@
                         } else if (this.qualityValue - degradeByValue > 0) {
                             this.qualityValue -= degradeByValue;
                         } else {
-                            this.qualityValue = minQuality;
+                            this.qualityValue = this.minQuality;
                         }
                     }
 
@@ -147,31 +148,13 @@
                 },
                 resetValues() {
                     //max: 2 weeks (14 days), min: 0
-                    this.sellInValue = randomNum(this.minSellIn || 0, MAX_SELL_IN_VALUE);
+                    this.sellInValue = _.random(this.minSellIn, MAX_SELL_IN_VALUE);
                     //max: 50, min: 0
-                    this.qualityValue = randomNum(this.minQuality || 0, MAX_QUALITY_VALUE);
+                    this.qualityValue = _.random(this.minQuality, MAX_QUALITY_VALUE);
                 }
             }
         };
 
         return InventoryItem;
-
-        //Following functions be moved to common file if more generically used (or use a library like lodash)
-        function isFunction(param) {
-            return Object.prototype.toString.call(param) == "[object Function]";
-        }
-
-        function isString(param) {
-            return Object.prototype.toString.call(param) === "[object String]"
-        }
-
-        function randomNum(min, max) {
-            var maxInclusive = max + 1;
-            return Math.ceil(Math.random() * (maxInclusive - min)) + min;
-        }
-
-        function isStringEmpty(str) {
-            return isString(str) && (str == null || str.trim().length === 0);
-        }
     });
 })();
