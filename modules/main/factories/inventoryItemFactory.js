@@ -12,6 +12,8 @@
  *          - Used for items with degradation factors higher than normal items.
  *          - Given this value, the current degradation factor is the quotient of this value and REGULAR_DEGRADATION_FACTOR 
  *              (i.e. result will be by how much qualityValue is decreased)
+ *      - "minSellIn" (integer)
+ *      - "minQuality" (integer)
  *      - "qualityValue" (object): 
  *          - "enhanceBy" (function):
  *              - Given an integer (sellInValue), should return an integer, which will be by how much qualityValue will be increased
@@ -21,6 +23,7 @@
  *                      - If true, quotient of "factor" and current degradation factor of object
  *                      - If false, qualityValue will decrease by "factor"
  *                  - "factor" (integer): in conjunction with "isRelative", determines by how much qualityValue will decrease
+ *                  - "setQualityTo" (integer): sets qualityValue to this integer
  *
  * Usage:
  * var config = {
@@ -65,6 +68,8 @@
 
                 item.name = config.name;
                 item.degradationFactorRelativeToNormal = config.degradationFactorRelativeToNormal || 1;
+                item.minSellIn = config.minSellIn;
+                item.minQuality = config.minQuality;
                 item.enhanceBy = config.qualityValue.enhanceBy;
                 item.degradeBy = config.qualityVaue.degradeBy;
                 item.resetValues();
@@ -81,9 +86,14 @@
                     this.updateQualityValue();
                 },
                 updateSellInValue: function updateSellInValud(numOfDays) {
-                    if (this.sellInValue > 0 && this.sellInValue - numOfDays >= 0) {
-                        this.sellInValue -= numOfDays || 1;
+                    var minSellIn = this.minSellIn || 0;
+
+                    if (numOfDays > this.sellInValue) {
+                        this.sellInValue = minSellIn;
+                    } else if (this.sellInValue > minSellIn) {
+                        this.sellInValue -= numOfDays == null ? 1 : numOfDays;
                     }
+
                     return this.sellInValue;
                 },
                 /**
@@ -91,6 +101,7 @@
                  * - Must be invoked when appropriate changes have been made to this.sellInValue
                  */
                 updateQualityValue: function updateQualityValue() {
+                    var minQuality = this.minQuality || 0;
                     if (this.qualityValue > 0) {
                         var defaultDegradationValue = REGULAR_DEGRADATION_FACTOR * this.degradationFactorRelativeToNormal;
 
@@ -108,17 +119,25 @@
 
                         if (isFunction(this.degradeBy)) {
                             degradeByConfig = this.degradeBy(this.sellInValue);
-                            degradeByValue = degradeByConfig.isRelative ?
-                                degradeByConfig.factor * defaultDegradationValue :
-                                degradeByConfig.factor;
+                            var setQualityTo = degradeByConfig.setQualityTo;
+                            if (setQualityTo != null) {
+                                this.qualityValue = setQualityTo;
+                                return this.qualityValue;
+                            } else {
+                                degradeByValue = degradeByConfig.isRelative ?
+                                    degradeByConfig.factor * defaultDegradationValue :
+                                    degradeByConfig.factor;
+                            }
                         }
 
                         if (enhanceByValue != null && degradeByValue != null) {
                             $log.error("Error in enhanceByValue and degradeByValue function definitions. Only one can return an integer given unique sellInValue.");
                         } else if (enhanceByValue != null) {
                             this.qualityValue += enhanceByValue;
-                        } else if (this.qualityValue - degradeByValue >= 0) {
+                        } else if (this.qualityValue - degradeByValue > 0) {
                             this.qualityValue -= degradeByValue;
+                        } else {
+                            this.qualityValue = minQuality;
                         }
                     }
 
@@ -126,9 +145,9 @@
                 },
                 resetValues() {
                     //max: 2 weeks (14 days), min: 0
-                    this.sellInValue = randomNum(MAX_SELL_IN_VALUE);
+                    this.sellInValue = randomNum(this.minSellIn || 0, MAX_SELL_IN_VALUE);
                     //max: 50, min: 0
-                    this.qualityValue = randomNum(MAX_QUALITY_VALUE);
+                    this.qualityValue = randomNum(this.minQuality || 0, MAX_QUALITY_VALUE);
                 }
             }
         };
@@ -144,8 +163,9 @@
             return Object.prototype.toString.call(param) === "[object String]"
         }
 
-        function randomNum(max) {
-            return Math.ceil(Math.random() * (max + 1));
+        function randomNum(min, max) {
+            var maxInclusive = max + 1;
+            return Math.ceil(Math.random() * (maxInclusive - min)) + min;
         }
 
         function isStringEmpty(str) {
