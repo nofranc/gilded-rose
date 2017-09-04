@@ -118,40 +118,50 @@
                     if (this.qualityValue > 0) {
                         var defaultDegradationValue = REGULAR_DEGRADATION_FACTOR * this.degradationFactorRelativeToNormal;
 
-                        var enhanceByValue = 0;
-                        //based on assumption that "for many items, quality degrades by one per day"
-                        var degradeByValue = this.sellInValue === 0 ?
-                            defaultDegradationValue * 2 :
-                            defaultDegradationValue;
-
-                        var degradeByConfig;
+                        var enhanceByValue;
+                        var degradeByValue;
 
                         if (_.isFunction(this.enhanceBy)) {
                             enhanceByValue = this.enhanceBy(this.sellInValue);
                         }
 
                         if (_.isFunction(this.degradeBy)) {
-                            degradeByConfig = this.degradeBy(this.sellInValue);
-                            var setQualityTo = degradeByConfig.setQualityTo;
+                            var degradeByConfig = this.degradeBy(this.sellInValue);
+                            var setQualityTo = _.get(degradeByConfig, "setQualityTo");
+                            var isRelative = _.get(degradeByConfig, "isRelative");
+                            var factor = _.get(degradeByConfig, "factor");
+
                             if (setQualityTo != null) {
                                 this.qualityValue = setQualityTo;
                                 return this.qualityValue;
                             } else {
-                                degradeByValue = degradeByConfig.isRelative ?
-                                    degradeByConfig.factor * defaultDegradationValue :
-                                    degradeByConfig.factor;
+                                degradeByValue = isRelative ?
+                                    factor * defaultDegradationValue : factor;
                             }
                         }
 
+                        //Validates values returned by degradeBy and enhanceBy functions
                         if (enhanceByValue != null && degradeByValue != null) {
                             $log.error("Error in enhanceByValue and degradeByValue function definitions. Only one can return an integer given unique sellInValue.");
-                        } else if (enhanceByValue != null) {
+                            return this.qualityValue;
+                        }
+
+                        /* 
+                         * Based on assumption that "for many items, quality degrades by one per day", 
+                         * must set default for degradeBy value before modifying this.qualityValue
+                         */
+                        degradeByValue = degradeByValue != null ? degradeByValue : this.sellInValue === 0 ?
+                            defaultDegradationValue * 2 :
+                            defaultDegradationValue;
+
+                        if (enhanceByValue != null) {
                             this.qualityValue += enhanceByValue;
                         } else if (this.qualityValue - degradeByValue > 0) {
                             this.qualityValue -= degradeByValue;
                         } else {
                             this.qualityValue = this.minQuality;
                         }
+
                     }
 
                     return this.qualityValue;
